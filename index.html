@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChefAI - Sugestor de Receitas</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.15.0/dist/ort.min.js"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍳 ChefAI</h1>
+            <p>Digite os ingredientes que você tem e receba sugestões de receitas!</p>
+        </header>
+
+        <div class="input-area">
+            <textarea id="ingredients-input" placeholder="Ex: ovos, farinha, açúcar, leite"></textarea>
+            <button id="suggest-btn">Sugerir Receitas</button>
+        </div>
+
+        <div class="results" id="results">
+            <!-- Resultados serão inseridos aqui via JavaScript -->
+        </div>
+
+        <footer>
+            <p>Projeto desenvolvido com ❤️ usando Python e JavaScript</p>
+        </footer>
+    </div>
+</body>
+</html>
