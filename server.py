@@ -13,7 +13,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Carrega modelos uma vez na inicialização
-MODEL_DIR = 'model_optimized'
+MODEL_DIR = '/tmp/model_optimized' if os.environ.get('VERCEL') else 'model_optimized'
 models = {}
 
 def load_models():
@@ -139,8 +139,13 @@ def download_models():
         if not drive_url:
             return jsonify({'success': False, 'error': 'URL do Google Drive não fornecida'}), 400
         
-        # Cria diretório temporário para os modelos
-        temp_dir = '/tmp/model_optimized'
+        # Define diretório baseado no ambiente
+        if os.environ.get('VERCEL'):
+            temp_dir = '/tmp/model_optimized'
+        else:
+            # No desenvolvimento local, usa diretório local
+            temp_dir = 'model_optimized'
+        
         os.makedirs(temp_dir, exist_ok=True)
         
         # Extrair o ID da pasta do Google Drive
@@ -156,7 +161,7 @@ def download_models():
             use_cookies=False
         )
         
-        # Atualiza o MODEL_DIR para apontar para o diretório temporário
+        # Atualiza o MODEL_DIR globalmente
         global MODEL_DIR
         MODEL_DIR = temp_dir
         
@@ -192,10 +197,15 @@ if __name__ == '__main__':
     # Tenta carregar modelos locais primeiro
     print("🚀 Iniciando servidor...")
     
-    # No ambiente local, tenta carregar modelos
-    # No Vercel, os modelos serão baixados sob demanda
-    if os.path.exists(MODEL_DIR):
-        load_models()
+    # Verifica múltiplos diretórios possíveis
+    possible_dirs = ['model_optimized', '/tmp/model_optimized', 'C:/tmp/model_optimized']
+    
+    for dir_path in possible_dirs:
+        if os.path.exists(dir_path):
+            MODEL_DIR = dir_path
+            print(f"📂 Encontrados modelos em: {MODEL_DIR}")
+            load_models()
+            break
     else:
         print("⚠️ Modelos não encontrados localmente. Serão baixados quando necessário.")
     
