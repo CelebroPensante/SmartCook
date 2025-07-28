@@ -1,21 +1,11 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-import joblib
 import numpy as np
 import re
 from pathlib import Path
 import gdown
 import os
-import zipfile
 import sys
-
-# Instala pandas dinamicamente se não estiver disponível
-try:
-    import pandas as pd
-except ImportError:
-    import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas==2.1.4", "--no-deps"])
-    import pandas as pd
 
 app = Flask(__name__)
 CORS(app)
@@ -24,9 +14,41 @@ CORS(app)
 MODEL_DIR = '/tmp/model_optimized' if os.environ.get('VERCEL') else 'model_optimized'
 models = {}
 
+def install_dependencies():
+    """Instala dependências pesadas dinamicamente"""
+    try:
+        import joblib
+        import pandas as pd
+        from sklearn.preprocessing import normalize
+        return True
+    except ImportError:
+        print("📦 Instalando dependências...")
+        import subprocess
+        try:
+            subprocess.check_call([
+                sys.executable, "-m", "pip", "install", 
+                "joblib==1.3.2", 
+                "pandas==2.0.3", 
+                "scikit-learn==1.3.0",
+                "pyarrow==12.0.1",
+                "--no-deps"
+            ], timeout=300)
+            return True
+        except Exception as e:
+            print(f"Erro ao instalar dependências: {e}")
+            return False
+
 def load_models():
     """Carrega todos os modelos na inicialização do servidor"""
     global models
+    
+    # Instala dependências primeiro
+    if not install_dependencies():
+        return False
+    
+    import joblib
+    import pandas as pd
+    
     try:
         # Verifica se o diretório existe
         if not os.path.exists(MODEL_DIR):
@@ -54,7 +76,7 @@ def load_models():
         return True
     except Exception as e:
         print(f"❌ Erro ao carregar modelos: {e}")
-        models.clear()  # Limpa modelos em caso de erro
+        models.clear()
         return False
 
 def preprocess_ingredient(ingredient):
@@ -79,6 +101,12 @@ def static_files(filename):
 def suggest_recipes():
     """Endpoint para sugestão de receitas"""
     try:
+        # Verifica se os modelos estão carregados
+        if not models:
+            return jsonify({'error': 'Modelos não carregados. Tente novamente em alguns instantes.'}), 503
+        
+        from sklearn.preprocessing import normalize
+        
         data = request.get_json()
         ingredients = data.get('ingredients', '')
         
@@ -95,7 +123,6 @@ def suggest_recipes():
         X_reduced = models['svd'].transform(X)
         
         # Normalização
-        from sklearn.preprocessing import normalize
         X_normalized = normalize(X_reduced, norm='l2')
         
         # Busca por similaridade
@@ -148,12 +175,7 @@ def download_models():
             return jsonify({'success': False, 'error': 'URL do Google Drive não fornecida'}), 400
         
         # Define diretório baseado no ambiente
-        if os.environ.get('VERCEL'):
-            temp_dir = '/tmp/model_optimized'
-        else:
-            # No desenvolvimento local, usa diretório local
-            temp_dir = 'model_optimized'
-        
+        temp_dir = '/tmp/model_optimized'
         os.makedirs(temp_dir, exist_ok=True)
         
         # Extrair o ID da pasta do Google Drive
@@ -202,7 +224,6 @@ def health_check():
     })
 
 if __name__ == '__main__':
-    # Tenta carregar modelos locais primeiro
     print("🚀 Iniciando servidor...")
     
     # Verifica múltiplos diretórios possíveis
