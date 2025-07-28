@@ -1,7 +1,10 @@
 // app.js - Sistema Completo de Recomendação de Receitas
 class RecipeRecommender {
     constructor() {
-        this.apiUrl = 'http://localhost:5000/api';
+        // Detecta automaticamente se está no desenvolvimento ou produção
+        this.apiUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000/api'
+            : '/api';
         this.initialized = false;
         this.googleDriveUrl = 'https://drive.google.com/drive/folders/1poHpksILFm9uIvBfJLogGzqbyUSQTFrt?usp=drive_link';
     }

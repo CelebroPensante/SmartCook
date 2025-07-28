@@ -14,7 +14,7 @@ try:
     import pandas as pd
 except ImportError:
     import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas==2.0.3", "--no-deps"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas==2.1.4", "--no-deps"])
     import pandas as pd
 
 app = Flask(__name__)
