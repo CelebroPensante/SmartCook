@@ -2,12 +2,20 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import joblib
 import numpy as np
-import pandas as pd
 import re
 from pathlib import Path
 import gdown
 import os
 import zipfile
+import sys
+
+# Instala pandas dinamicamente se não estiver disponível
+try:
+    import pandas as pd
+except ImportError:
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas==2.0.3", "--no-deps"])
+    import pandas as pd
 
 app = Flask(__name__)
 CORS(app)
