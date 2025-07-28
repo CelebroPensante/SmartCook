@@ -20,6 +20,13 @@ def load_models():
     """Carrega todos os modelos na inicialização do servidor"""
     global models
     try:
+        # Verifica se o diretório existe
+        if not os.path.exists(MODEL_DIR):
+            print(f"❌ Diretório de modelos não encontrado: {MODEL_DIR}")
+            return False
+        
+        print(f"📂 Carregando modelos do diretório: {MODEL_DIR}")
+        
         # Carrega pré-processadores
         preprocessors = joblib.load(f'{MODEL_DIR}/preprocessor.joblib')
         models['vectorizer'] = preprocessors['vectorizer']
@@ -39,6 +46,7 @@ def load_models():
         return True
     except Exception as e:
         print(f"❌ Erro ao carregar modelos: {e}")
+        models.clear()  # Limpa modelos em caso de erro
         return False
 
 def preprocess_ingredient(ingredient):
@@ -131,35 +139,64 @@ def download_models():
         if not drive_url:
             return jsonify({'success': False, 'error': 'URL do Google Drive não fornecida'}), 400
         
-        # Diretório para salvar os modelos
-        models_dir = 'models'
-        os.makedirs(models_dir, exist_ok=True)
+        # Cria diretório temporário para os modelos
+        temp_dir = '/tmp/model_optimized'
+        os.makedirs(temp_dir, exist_ok=True)
         
         # Extrair o ID da pasta do Google Drive
         folder_id = '1poHpksILFm9uIvBfJLogGzqbyUSQTFrt'
         
+        print("📥 Baixando modelos do Google Drive...")
+        
         # Download dos arquivos da pasta
-        gdown.download_folder(f'https://drive.google.com/drive/folders/{folder_id}', 
-                             output=models_dir, quiet=False, use_cookies=False)
+        gdown.download_folder(
+            f'https://drive.google.com/drive/folders/{folder_id}', 
+            output=temp_dir, 
+            quiet=False, 
+            use_cookies=False
+        )
+        
+        # Atualiza o MODEL_DIR para apontar para o diretório temporário
+        global MODEL_DIR
+        MODEL_DIR = temp_dir
         
         # Recarregar os modelos
-        load_models()
+        success = load_models()
         
-        return jsonify({'success': True, 'message': 'Modelos baixados com sucesso'})
+        if success:
+            return jsonify({'success': True, 'message': 'Modelos baixados e carregados com sucesso'})
+        else:
+            return jsonify({'success': False, 'error': 'Erro ao carregar modelos após download'})
         
     except Exception as e:
+        print(f"Erro no download: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/health')
 def health_check():
     """Verifica se os modelos estão carregados"""
+    models_loaded = (
+        bool(models) and 
+        'vectorizer' in models and 
+        'similarity_model' in models and 
+        'metadata' in models
+    )
+    
     return jsonify({
-        'status': 'ok' if models else 'error',
-        'models_loaded': bool(models)
+        'status': 'ok' if models_loaded else 'needs_models',
+        'models_loaded': models_loaded,
+        'models_count': len(models) if models else 0
     })
 
 if __name__ == '__main__':
-    if load_models():
-        app.run(debug=True, port=5000)
+    # Tenta carregar modelos locais primeiro
+    print("🚀 Iniciando servidor...")
+    
+    # No ambiente local, tenta carregar modelos
+    # No Vercel, os modelos serão baixados sob demanda
+    if os.path.exists(MODEL_DIR):
+        load_models()
     else:
-        print("Falha ao carregar modelos. Certifique-se de que model.py foi executado primeiro.")
+        print("⚠️ Modelos não encontrados localmente. Serão baixados quando necessário.")
+    
+    app.run(debug=True, port=5000)
