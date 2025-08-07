@@ -1,5 +1,5 @@
-Flask==3.1.0
-Flask-CORS==6.0.1
-numpy==2.0.2
-gdown==5.2.0
-requests==2.32.3
+Flask
+Flask-CORS
+numpy
+gdown
+requests

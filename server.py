@@ -29,8 +29,7 @@ def install_dependencies():
                 "joblib==1.3.2", 
                 "pandas==2.0.3", 
                 "scikit-learn==1.3.0",
-                "pyarrow==12.0.1",
-                "--no-deps"
+                "pyarrow==12.0.1"
             ], timeout=300)
             return True
         except Exception as e:
@@ -196,6 +195,9 @@ def handler(environ, start_response):
     Função handler requerida pelo Vercel para aplicações Flask
     """
     return app(environ, start_response)
+
+# Export da função para o Vercel
+app = app
 
 # Para desenvolvimento local
 if __name__ == '__main__':
