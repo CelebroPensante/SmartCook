@@ -1,10 +1,14 @@
 {
   "version": 2,
-  "functions": {
-    "server.py": {
-      "runtime": "python3.12"
+  "builds": [
+    {
+      "src": "server.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.12"
+      }
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
@@ -12,7 +16,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/server.py"
+      "dest": "/public/$1"
     }
   ]
 }
