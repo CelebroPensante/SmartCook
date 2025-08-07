@@ -76,11 +76,17 @@ def preprocess_ingredient(ingredient):
 
 @app.route('/')
 def index():
-    return send_from_directory('public', 'index.html')
+    try:
+        return send_from_directory('public', 'index.html')
+    except:
+        return jsonify({'message': 'SmartCook API is running'}), 200
 
 @app.route('/<path:filename>')
 def static_files(filename):
-    return send_from_directory('public', filename)
+    try:
+        return send_from_directory('public', filename)
+    except:
+        return jsonify({'error': 'File not found'}), 404
 
 @app.route('/api/suggest', methods=['POST'])
 def suggest_recipes():
@@ -184,13 +190,24 @@ def health_check():
         'models_count': len(models) if models else 0
     })
 
-# Tenta carregar os modelos na inicialização
-possible_dirs = ['model_optimized', '/tmp/model_optimized', 'C:/tmp/model_optimized']
-for dir_path in possible_dirs:
-    if os.path.exists(dir_path):
-        MODEL_DIR = dir_path
-        print(f"📂 Encontrados modelos em: {MODEL_DIR}")
-        load_models()
-        break
-else:
-    print("⚠️ Modelos não encontrados localmente. Serão baixados quando necessário.")
+# **FUNÇÃO HANDLER PARA O VERCEL - ESSENCIAL**
+def handler(environ, start_response):
+    """
+    Função handler requerida pelo Vercel para aplicações Flask
+    """
+    return app(environ, start_response)
+
+# Para desenvolvimento local
+if __name__ == '__main__':
+    # Tenta carregar os modelos na inicialização local
+    possible_dirs = ['model_optimized', '/tmp/model_optimized', 'C:/tmp/model_optimized']
+    for dir_path in possible_dirs:
+        if os.path.exists(dir_path):
+            MODEL_DIR = dir_path
+            print(f"📂 Encontrados modelos em: {MODEL_DIR}")
+            load_models()
+            break
+    else:
+        print("⚠️ Modelos não encontrados localmente. Serão baixados quando necessário.")
+    
+    app.run(debug=True)
